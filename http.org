@@ -32,3 +32,6 @@ Hey there!
 #+end_src
 
 * TOKEN
+#+begin_src restclient :var host=get-env()
+GET :host/token/some_id
+#+end_src

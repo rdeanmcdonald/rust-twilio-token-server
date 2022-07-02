@@ -1,33 +1,35 @@
 use config::{Config, ConfigError, Environment, File};
-use serde_derive::Deserialize;
+use serde::Deserialize;
 use std::env;
 
 #[derive(Debug, Deserialize)]
 #[allow(unused)]
-struct Log {
-    level: String,
+pub struct Log {
+    pub level: String,
 }
 
 #[derive(Debug, Deserialize)]
 #[allow(unused)]
-struct Server {
-    port: u16,
+pub struct Server {
+    pub port: u16,
 }
 
 #[derive(Debug, Deserialize)]
 #[allow(unused)]
-struct Twilio {
-    account_sid: String,
-    auth_token: String,
+pub struct Twilio {
+    pub account_sid: String,
+    pub auth_token: String,
+    pub api_key_sid: String,
+    pub api_key_secret: String,
 }
 
 #[derive(Debug, Deserialize)]
 #[allow(unused)]
 pub struct Settings {
-    debug: bool,
-    log: Log,
-    server: Server,
-    twilio: Twilio,
+    pub debug: bool,
+    pub log: Log,
+    pub server: Server,
+    pub twilio: Twilio,
 }
 
 impl Settings {
