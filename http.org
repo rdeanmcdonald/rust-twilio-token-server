@@ -26,6 +26,10 @@ GET :host/hey
 #+end_src
 
 #+begin_src restclient :var host=get-env()
+GET :host/visitor/hey
+#+end_src
+
+#+begin_src restclient :var host=get-env()
 POST :host/echo
 Content-Type: application/json
 Hey there!
@@ -34,4 +38,9 @@ Hey there!
 * TOKEN
 #+begin_src restclient :var host=get-env()
 GET :host/token/some_id
+#+end_src
+
+#+begin_src restclient :var host=get-env()
+GET :host/visitor/token/some_id
+Authorization: Bearer enterprise_id
 #+end_src

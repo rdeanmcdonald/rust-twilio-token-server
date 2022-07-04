@@ -4,6 +4,7 @@ use jsonwebtoken::{encode, Algorithm, EncodingKey, Header};
 use rand::{distributions::Alphanumeric, Rng};
 use serde::{Deserialize, Serialize};
 
+#[derive(Debug)]
 pub struct Jwt {
     header: Header,
 }
