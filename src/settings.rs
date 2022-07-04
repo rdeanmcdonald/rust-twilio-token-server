@@ -21,6 +21,7 @@ pub struct Twilio {
     pub auth_token: String,
     pub api_key_sid: String,
     pub api_key_secret: String,
+    pub chat_service_sid: String,
 }
 
 #[derive(Debug, Deserialize)]

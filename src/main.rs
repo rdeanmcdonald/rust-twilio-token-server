@@ -1,7 +1,15 @@
 mod jwt;
 mod settings;
 
-use actix_web::{get, post, web, App, HttpResponse, HttpServer, Responder};
+use actix_cors::Cors;
+use actix_web::middleware::Logger;
+use actix_web::{
+    dev::{forward_ready, Service, ServiceRequest, ServiceResponse, Transform},
+    Error,
+};
+use actix_web::{get, post, web, App, HttpResponse, HttpServer, Responder, Result};
+use env_logger::Env;
+use regex::Regex;
 use settings::Settings;
 
 #[get("/")]
@@ -19,9 +27,9 @@ async fn manual_hello() -> impl Responder {
 }
 
 #[get("/token/{id}")]
-async fn token(data: web::Data<AppState>, id: web::Path<String>) -> impl Responder {
+async fn token(data: web::Data<AppState>, id: web::Path<String>) -> Result<impl Responder> {
     let token = data.jwt.gen_token(&data.settings, format!("{}", id));
-    HttpResponse::Ok().body(token)
+    Ok(web::Json(token))
 }
 
 struct AppState {
@@ -31,11 +39,29 @@ struct AppState {
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
+    env_logger::init_from_env(Env::default().default_filter_or("info"));
+
     let settings = Settings::new().expect("INVALID SETTINGS");
     println!("Starting server: {:?}", settings);
 
     HttpServer::new(|| {
+        let cors = Cors::default()
+            .allowed_origin_fn(|origin, _req_head| {
+                println!("{:?}", origin);
+                let re = Regex::new(r"http://localhost:*").unwrap();
+
+                let allowed = re.is_match(std::str::from_utf8(origin.as_bytes()).unwrap());
+                println!("HIIIII");
+                println!("{:?}", allowed);
+
+                allowed
+            })
+            .allowed_methods(vec!["GET", "POST"])
+            .max_age(3600);
+
         App::new()
+            .wrap(Logger::default())
+            .wrap(cors)
             .app_data(web::Data::new(AppState {
                 settings: Settings::new().expect("INVALID SETTINGS"),
                 jwt: jwt::Jwt::new(),

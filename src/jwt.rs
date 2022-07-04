@@ -8,6 +8,11 @@ pub struct Jwt {
     header: Header,
 }
 
+#[derive(Serialize)]
+pub struct Token {
+    token: String,
+}
+
 impl Jwt {
     pub fn new() -> Self {
         let mut header = Header::new(Algorithm::HS256);
@@ -16,10 +21,12 @@ impl Jwt {
         Jwt { header }
     }
 
-    pub fn gen_token(&self, settings: &Settings, identity: String) -> String {
+    pub fn gen_token(&self, settings: &Settings, identity: String) -> Token {
         let claims = Claims::new(settings, identity);
         let secret = settings.twilio.api_key_secret[..].as_bytes();
-        encode(&self.header, &claims, &EncodingKey::from_secret(secret)).unwrap()
+        let token = encode(&self.header, &claims, &EncodingKey::from_secret(secret)).unwrap();
+
+        Token { token }
     }
 }
 
@@ -49,7 +56,7 @@ impl Claims {
             sub: format!("{}", settings.twilio.account_sid),
             iat: now.timestamp(),
             exp: (now + Duration::hours(15)).timestamp(),
-            grants: ChatGrant::new(identity),
+            grants: ChatGrant::new(settings, identity),
         }
     }
 }
@@ -61,10 +68,10 @@ struct ChatGrant {
 }
 
 impl ChatGrant {
-    fn new(identity: String) -> Self {
+    fn new(settings: &Settings, identity: String) -> Self {
         ChatGrant {
             identity,
-            chat: ChatGrantData::new(),
+            chat: ChatGrantData::new(settings),
         }
     }
 }
@@ -75,9 +82,10 @@ struct ChatGrantData {
 }
 
 impl ChatGrantData {
-    fn new() -> Self {
+    fn new(settings: &Settings) -> Self {
+        // let a = settings.twilio.chat_service_sid;
         ChatGrantData {
-            service_sid: String::from("some_service_sid"),
+            service_sid: settings.twilio.chat_service_sid.to_owned(),
         }
     }
 }
