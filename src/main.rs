@@ -6,7 +6,8 @@ use actix_cors::Cors;
 use actix_web::dev::{Service, ServiceRequest};
 use actix_web::middleware::Logger;
 use actix_web::{
-    get, post, web, web::Data, App, Error, HttpResponse, HttpServer, Responder, Result,
+    get, http::header::ORIGIN, post, web, web::Data, App, Error, HttpResponse, HttpServer,
+    Responder, Result,
 };
 use enterprise::Enterprises;
 use env_logger::Env;
@@ -51,8 +52,7 @@ async fn bearer_auth_validator(
     req: ServiceRequest,
     credentials: BearerAuth,
 ) -> Result<ServiceRequest, Error> {
-    println!("HEEERRRRRREEEEEEEE");
-
+    println!("HEEEEERRRRRREEEEE");
     let enterprise = req
         .app_data::<web::Data<AppState>>()
         .ok_or(auth_err(&req))?
@@ -60,7 +60,15 @@ async fn bearer_auth_validator(
         .find(credentials.token())
         .ok_or(auth_err(&req))?;
 
-    if credentials.token() == &enterprise.id[..] {
+    let origin = req
+        .headers()
+        .get(ORIGIN)
+        .ok_or(auth_err(&req))?
+        .to_str()
+        .map_err(|_e| auth_err(&req))?;
+
+    println!("ORIGIN: {}", origin);
+    if credentials.token() == &enterprise.id[..] && &enterprise.origin[..] == origin {
         Ok(req)
     } else {
         Err(auth_err(&req))
@@ -76,7 +84,7 @@ struct AppState {
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    env_logger::init_from_env(Env::default().default_filter_or("info"));
+    env_logger::init_from_env(Env::default().default_filter_or("debug"));
 
     let settings = Settings::new().expect("INVALID SETTINGS");
     println!("Starting server: {:?}", settings);
@@ -89,41 +97,39 @@ async fn main() -> std::io::Result<()> {
 
     HttpServer::new(move || {
         let cors = Cors::default()
+            .allow_any_method()
+            .allow_any_header()
+            // .allowed_origin("http://localhost:8081")
             .allowed_origin_fn(|origin, _req_head| {
-                println!("{:?}", origin);
+                // println!("CHECKING ORIGIN: {}", origin.to_str().unwrap());
                 let re = Regex::new(r"http://localhost:*").unwrap();
-
                 let allowed = re.is_match(std::str::from_utf8(origin.as_bytes()).unwrap());
-                println!("HIIIII");
-                println!("{:?}", allowed);
-
+                // println!("IS ALLOWED: {}", allowed);
                 allowed
             })
-            .allowed_methods(vec!["GET", "POST"])
+            // .allowed_methods(vec!["GET", "POST", "OPTIONS"])
             .max_age(3600);
 
         let auth = HttpAuthentication::bearer(bearer_auth_validator);
 
-        App::new()
-            .wrap(Logger::default())
-            .wrap(cors)
-            .app_data(Data::clone(&app_data))
-            .service(hello)
-            .service(echo)
-            .service(token)
-            .route("/hey", web::get().to(manual_hello))
-            .service(
-                web::scope("/visitor")
-                    // wrapps called from inside out, so this is the last call
-                    .wrap_fn(|req, srv| {
-                        println!("Hi from start. You requested: {}", req.path());
-                        srv.call(req)
-                    })
-                    // this wrap is called first
-                    .wrap(auth)
-                    .route("/hey", web::get().to(manual_hello))
-                    .service(token),
-            )
+        App::new().service(
+            web::scope("/visitor")
+                // wrapps called from inside out, so this is the last call
+                // .wrap_fn(|req, srv| {
+                //     println!("Hi from start. You requested: {}", req.path());
+                //     srv.call(req)
+                // })
+                // this wrap is called first
+                .wrap(auth)
+                .wrap(cors)
+                .wrap(Logger::default())
+                .app_data(Data::clone(&app_data))
+                .service(hello)
+                .service(echo)
+                .service(token)
+                .route("/hey", web::get().to(manual_hello))
+                .service(token),
+        )
     })
     .bind(("127.0.0.1", settings.server.port))?
     .run()

@@ -33,7 +33,7 @@ impl Enterprise {
     pub fn new(id: &str) -> Self {
         Enterprise {
             id: String::from(id),
-            origin: String::from("http://localhost"),
+            origin: String::from("http://localhost:8081"),
         }
     }
 }
