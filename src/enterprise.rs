@@ -19,10 +19,6 @@ impl Enterprises {
     }
 }
 
-// impl AsRef<Enterprises> for Enterprises {
-//     pub fn as_ref(&self, )
-// }
-
 #[derive(Debug)]
 pub struct Enterprise {
     pub id: String,

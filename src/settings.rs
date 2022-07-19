@@ -1,4 +1,5 @@
 use config::{Config, ConfigError, Environment, File};
+use log::debug;
 use serde::Deserialize;
 use std::env;
 
@@ -53,7 +54,7 @@ impl Settings {
             .build()?;
 
         // Now that we're done, let's access our configuration
-        println!("debug: {:?}", s.get_bool("debug"));
+        debug!("debug: {:?}", s.get_bool("debug"));
         // println!("database: {:?}", s.get::<String>("database.url"));
 
         // You can deserialize (and thus freeze) the entire configuration as

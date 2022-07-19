@@ -3,7 +3,7 @@ mod jwt;
 mod settings;
 
 use actix_cors::Cors;
-use actix_web::dev::{Service, ServiceRequest};
+use actix_web::dev::ServiceRequest;
 use actix_web::middleware::Logger;
 use actix_web::{
     get, http::header::ORIGIN, post, web, web::Data, App, Error, HttpResponse, HttpServer,
@@ -11,6 +11,7 @@ use actix_web::{
 };
 use enterprise::Enterprises;
 use env_logger::Env;
+use log::{debug, info};
 use regex::Regex;
 use settings::Settings;
 
@@ -52,7 +53,7 @@ async fn bearer_auth_validator(
     req: ServiceRequest,
     credentials: BearerAuth,
 ) -> Result<ServiceRequest, Error> {
-    println!("HEEEEERRRRRREEEEE");
+    debug!("VALIDATING TOKEN: {}", credentials.token());
     let enterprise = req
         .app_data::<web::Data<AppState>>()
         .ok_or(auth_err(&req))?
@@ -60,6 +61,7 @@ async fn bearer_auth_validator(
         .find(credentials.token())
         .ok_or(auth_err(&req))?;
 
+    debug!("FOUND ENTERPRISE: {:?}", enterprise);
     let origin = req
         .headers()
         .get(ORIGIN)
@@ -67,10 +69,12 @@ async fn bearer_auth_validator(
         .to_str()
         .map_err(|_e| auth_err(&req))?;
 
-    println!("ORIGIN: {}", origin);
+    debug!("ORIGIN: {}", origin);
     if credentials.token() == &enterprise.id[..] && &enterprise.origin[..] == origin {
+        debug!("AUTHORIZED");
         Ok(req)
     } else {
+        debug!("NOT AUTHORIZED");
         Err(auth_err(&req))
     }
 }
@@ -87,11 +91,12 @@ async fn main() -> std::io::Result<()> {
     env_logger::init_from_env(Env::default().default_filter_or("debug"));
 
     let settings = Settings::new().expect("INVALID SETTINGS");
-    println!("Starting server: {:?}", settings);
+    let port = settings.server.port;
+    info!("Starting server: {:?}", settings);
 
     let app_data = web::Data::new(AppState {
         enterprises: Enterprises::new(),
-        settings: Settings::new().expect("INVALID SETTINGS"),
+        settings,
         jwt: jwt::Jwt::new(),
     });
 
@@ -101,10 +106,10 @@ async fn main() -> std::io::Result<()> {
             .allow_any_header()
             // .allowed_origin("http://localhost:8081")
             .allowed_origin_fn(|origin, _req_head| {
-                // println!("CHECKING ORIGIN: {}", origin.to_str().unwrap());
+                debug!("CHECKING ORIGIN: {}", origin.to_str().unwrap());
                 let re = Regex::new(r"http://localhost:*").unwrap();
                 let allowed = re.is_match(std::str::from_utf8(origin.as_bytes()).unwrap());
-                // println!("IS ALLOWED: {}", allowed);
+                debug!("IS ALLOWED: {}", allowed);
                 allowed
             })
             // .allowed_methods(vec!["GET", "POST", "OPTIONS"])
@@ -131,7 +136,7 @@ async fn main() -> std::io::Result<()> {
                 .service(token),
         )
     })
-    .bind(("127.0.0.1", settings.server.port))?
+    .bind(("127.0.0.1", port))?
     .run()
     .await
 }

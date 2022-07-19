@@ -22,15 +22,21 @@ return local.get(key)
 
 * Practice
 #+begin_src restclient :var host=get-env()
-GET :host/hey
+GET :host/visitor/hey
+Authorization: Bearer enterprise_id
+Origin: http://localhost:8081
 #+end_src
 
 #+begin_src restclient :var host=get-env()
 GET :host/visitor/hey
+Authorization: Bearer enterprise_id
+Origin: http://localhost:8081
 #+end_src
 
 #+begin_src restclient :var host=get-env()
-POST :host/echo
+POST :host/visitor/echo
+Authorization: Bearer enterprise_id
+Origin: http://localhost:8081
 Content-Type: application/json
 Hey there!
 #+end_src
@@ -45,14 +51,3 @@ GET :host/visitor/token/some_id
 Authorization: Bearer enterprise_id
 Origin: http://localhost:64610
 #+end_src
-
-#+RESULTS:
-#+BEGIN_SRC js
-Origin is not allowed to make this request
-// GET http://localhost:8080/visitor/token/some_id
-// HTTP/1.1 400 Bad Request
-// content-length: 42
-// vary: Origin, Access-Control-Request-Method, Access-Control-Request-Headers
-// date: Mon, 04 Jul 2022 20:59:02 GMT
-// Request duration: 0.002084s
-#+END_SRC
