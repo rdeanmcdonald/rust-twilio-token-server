@@ -43,11 +43,7 @@ Hey there!
 
 * TOKEN
 #+begin_src restclient :var host=get-env()
-GET :host/token/some_id
-#+end_src
-
-#+begin_src restclient :var host=get-env()
 GET :host/visitor/token/some_id
 Authorization: Bearer enterprise_id
-Origin: http://localhost:64610
+Origin: http://localhost:8081
 #+end_src
